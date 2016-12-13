@@ -1,7 +1,7 @@
 /*
 
-This example reads standard from input and writes
-to the default PCM device for 5 seconds of data.
+This example reads from the default PCM device
+and writes to standard output for 5 seconds of data.
 
 */
 
@@ -21,9 +21,10 @@ int main() {
     snd_pcm_uframes_t frames;
     char *buffer;
 
-    /* Open PCM device for playback. */
+    /*以录制模式打开*/
+    /* Open PCM device for recording (capture). */
     rc = snd_pcm_open(&handle, "default",
-                    SND_PCM_STREAM_PLAYBACK, 0);
+                        SND_PCM_STREAM_CAPTURE, 0);
     if (rc < 0) {
         fprintf(stderr,
                 "unable to open pcm device: %s/n",
@@ -44,12 +45,12 @@ int main() {
     /*交错模式*/
     /* Interleaved mode */
     snd_pcm_hw_params_set_access(handle, params,
-                      SND_PCM_ACCESS_RW_INTERLEAVED);
+                          SND_PCM_ACCESS_RW_INTERLEAVED);
 
-    /*设置PCM格式*/
+    /*PCM格式*/
     /* Signed 16-bit little-endian format */
     snd_pcm_hw_params_set_format(handle, params,
-                              SND_PCM_FORMAT_S16_LE);
+                                  SND_PCM_FORMAT_S16_LE);
 
     /*设置通道数*/
     /* Two channels (stereo) */
@@ -59,12 +60,13 @@ int main() {
     /* 44100 bits/second sampling rate (CD quality) */
     val = 44100;
     snd_pcm_hw_params_set_rate_near(handle, params,
-                                  &val, &dir);
+                                &val, &dir);
 
+    /*没周期的帧数*/
     /* Set period size to 32 frames. */
     frames = 32;
     snd_pcm_hw_params_set_period_size_near(handle,
-                              params, &frames, &dir);
+                            params, &frames, &dir);
 
     /* Write the parameters to the driver */
     rc = snd_pcm_hw_params(handle, params);
@@ -76,41 +78,34 @@ int main() {
     }
 
     /* Use a buffer large enough to hold one period */
-    snd_pcm_hw_params_get_period_size(params, &frames, &dir);
+    snd_pcm_hw_params_get_period_size(params,
+                                          &frames, &dir);
     size = frames * 4; /* 2 bytes/sample, 2 channels */
     buffer = (char *) malloc(size);
 
     /* We want to loop for 5 seconds */
-    snd_pcm_hw_params_get_period_time(params,
-                                    &val, &dir);
-    /* 5 seconds in microseconds divided by
-    * period time */
+    snd_pcm_hw_params_get_period_time(params, &val, &dir);
     loops = 5000000 / val;
 
     while (loops > 0) {
         loops--;
-        rc = read(0, buffer, size);
-        if (rc == 0) {
-            fprintf(stderr, "end of file on input/n");
-            break;
-        } else if (rc != size) {
-            fprintf(stderr,
-                  "short read: read %d bytes/n", rc);
-        }
-        rc = snd_pcm_writei(handle, buffer, frames);
+        rc = snd_pcm_readi(handle, buffer, frames);
         if (rc == -EPIPE) {
-            /* EPIPE means underrun */
-            fprintf(stderr, "underrun occurred/n");
-            //把PCM流置于PREPARED状态，这样下次我们向该PCM流中数据时，它就能重新开始处理数据。
-            snd_pcm_prepare(handle); 
+          /* EPIPE means overrun */
+          fprintf(stderr, "overrun occurred/n");
+          //把PCM流置于PREPARED状态，这样下次我们向该PCM流中数据时，它就能重新开始处理数据。
+          snd_pcm_prepare(handle);
         } else if (rc < 0) {
-            fprintf(stderr,
-                "error from writei: %s/n",
-            snd_strerror(rc));
-        }  else if (rc != (int)frames) {
-            fprintf(stderr,
-                  "short write, write %d frames/n", rc);
+          fprintf(stderr,
+                  "error from read: %s/n",
+                  snd_strerror(rc));
+        } else if (rc != (int)frames) {
+          fprintf(stderr, "short read, read %d frames/n", rc);
         }
+        rc = write(1, buffer, size);
+        if (rc != size)
+          fprintf(stderr,
+                  "short write: wrote %d bytes/n", rc);
     }
 
     //调用snd_pcm_drain把所有挂起没有传输完的声音样本传输完全
@@ -119,5 +114,5 @@ int main() {
     snd_pcm_close(handle);
     free(buffer);
 
-  return 0;
+    return 0;
 }
