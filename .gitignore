@@ -32,6 +32,6 @@
 *.dSYM/
 *.su
 
-
+main
 CHA13
 sound

@@ -4,13 +4,16 @@ int main()
 {
     int val;
 
+    //输出版本
     printf("ALSA library version: %s\n", SND_LIB_VERSION_STR);
 
+    //输出流类型
     printf("\nPCM stream types:\n");
     for (val = 0; val <= SND_PCM_STREAM_LAST; val++)
     {
         printf(" %s\n", snd_pcm_stream_name((snd_pcm_stream_t)val));
     }
+
 
     printf("\nPCM access types:\n");
     for (val = 0; val <= SND_PCM_ACCESS_LAST; val++)
@@ -18,6 +21,7 @@ int main()
         printf(" %s\n", snd_pcm_access_name((snd_pcm_access_t)val));
     }
 
+    //PCM格式
     printf("\nPCM formats:\n");
     for (val = 0; val <= SND_PCM_FORMAT_LAST; val++)
     {
@@ -26,6 +30,7 @@ int main()
                   snd_pcm_format_description( ( snd_pcm_format_t)val ) );
     }
 
+
     printf("\nPCM subformats:\n");
     for (val = 0; val <= SND_PCM_SUBFORMAT_LAST; val++)
     {
@@ -33,6 +38,8 @@ int main()
           snd_pcm_subformat_description( (snd_pcm_subformat_t) val) );
     }
 
+
+    //PCM的状态
     printf("\nPCM states:\n");
     for (val = 0; val <= SND_PCM_STATE_LAST; val++)
     {
