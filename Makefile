@@ -1,5 +1,5 @@
 CC=gcc
-TARGET=main
+TARGET=capture
 SRC=$(wildcard *.c)
 
 OBJECT= ${SRC:.c=.o}
