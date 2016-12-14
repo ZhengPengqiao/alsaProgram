@@ -10,6 +10,11 @@ to the default PCM device for 5 seconds of data.
 
 #include <alsa/asoundlib.h>
 
+#define    M_AUDIO_CHANNELS        1       //音频通道数量，必须固定是1，不然代码需要修改
+#define    M_AUDIO_SAMPLERATE      44100    //音频采样频率，11025、22050、44100等
+#define    M_AUDIO_BITSPERSAMPLE   SND_PCM_FORMAT_S16_LE//音频样本位数，必须固定是16
+#define    FRAMES                  505           //每周期的帧数
+
 int main() {
     long loops;
     int rc;
@@ -43,26 +48,24 @@ int main() {
 
     /*交错模式*/
     /* Interleaved mode */
-    snd_pcm_hw_params_set_access(handle, params,
+    //snd_pcm_hw_params_set_access(handle, params,\
                       SND_PCM_ACCESS_RW_INTERLEAVED);
 
     /*设置PCM格式*/
     /* Signed 16-bit little-endian format */
     snd_pcm_hw_params_set_format(handle, params,
-                              SND_PCM_FORMAT_S16_LE);
+                              M_AUDIO_BITSPERSAMPLE);
 
     /*设置通道数*/
-    /* Two channels (stereo) */
-    snd_pcm_hw_params_set_channels(handle, params, 2);
+    snd_pcm_hw_params_set_channels(handle, params, M_AUDIO_CHANNELS);
 
     /*设置采样率*/
-    /* 44100 bits/second sampling rate (CD quality) */
-    val = 44100;
+    val = M_AUDIO_SAMPLERATE;
     snd_pcm_hw_params_set_rate_near(handle, params,
                                   &val, &dir);
 
-    /* Set period size to 32 frames. */
-    frames = 32;
+    /* Set period size to FRAMES frames. */
+    frames = FRAMES;
     snd_pcm_hw_params_set_period_size_near(handle,
                               params, &frames, &dir);
 
@@ -77,7 +80,7 @@ int main() {
 
     /* Use a buffer large enough to hold one period */
     snd_pcm_hw_params_get_period_size(params, &frames, &dir);
-    size = frames * 4; /* 2 bytes/sample, 2 channels */
+    size = frames * 2 * M_AUDIO_CHANNELS; /* 2 bytes/sample, 2 channels */
     buffer = (char *) malloc(size);
 
     /* We want to loop for 5 seconds */
@@ -85,7 +88,7 @@ int main() {
                                     &val, &dir);
     /* 5 seconds in microseconds divided by
     * period time */
-    loops = 5000000 / val;
+    loops = 40000000 / val;
 
     while (loops > 0) {
         loops--;
